@@ -1,0 +1,92 @@
+version: '2'
+services:
+    mariaDB:
+        image: mariadb:latest
+        hostname: dbserver
+        container_name: mariadb
+        networks:
+            infra_DB:
+                ipv4_address: 172.16.0.1
+        volumes:
+            - databases:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: al19plbt
+
+    mediawiki:
+        image: mediawiki
+        hostname: wikiserver
+        container_name: wiki
+        ports:
+            - "5080:80"
+        networks:
+            infra_DB:
+                ipv4_address: 172.16.0.5
+        external_links:
+            - mariaDB:db
+            - parsoid
+        volumes:
+            - /var/www/html/images 
+            - ./wiki_conf/LocalSettings.php:/var/www/html/LocalSettings.php
+            - ./wiki_extensions:/var/www/html/extensions
+
+    parsoid:
+        image: thenets/parsoid:0.9.0
+        hostname: parsoidserver
+        container_name: parsoid
+        ports:
+            - "6080:8000"
+        networks:
+            infra_DB:
+                ipv4_address: 172.16.0.90
+        environment:
+            PARSOID_DOMAIN_mediawiki: http://172.16.0.5/api.php
+
+    PMA:
+        image: phpmyadmin/phpmyadmin
+        hostname: PMAserver
+        container_name: PMA
+        ports:
+            - "4080:80"
+        networks:
+            infra_DB:
+                ipv4_address: 172.16.0.10
+        volumes:
+            - /sessions
+        external_links:
+            - mariaDB:db
+
+    portainer: 
+        image: portainer/portainer
+        container_name: portainer
+        ports:
+            - "9000:9000"
+        networks:
+            infra_DB:
+                ipv4_address: 172.16.0.40
+        command: -H unix:///var/run/docker.sock
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - portainer_data:/data
+
+#    rancher:
+#        image: rancher/rancher
+#        container_name: rancherserver
+#        ports:
+#            - "7080:80"
+#            - "7443:443"
+#        networks:
+#            infra_DB:
+#                ipv4_address: 172.16.0.50
+
+networks:
+    infra_DB:
+        driver: bridge
+        ipam:
+           config:
+                - subnet: 172.16.0.0/24
+                  gateway: 172.16.0.254
+
+volumes:
+    databases:
+    portainer_data:
+    #wiki_extensions:

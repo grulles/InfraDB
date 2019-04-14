@@ -1,0 +1,53 @@
+version: '2'
+services:
+    mariaDB:
+        image: mariadb:latest
+        hostname: dbserver
+        container_name: mariadb
+        networks:
+            infra_DB:
+                ipv4_address: 172.16.0.1
+        volumes:
+            - databases:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: al19plbt
+
+    PMA:
+        image: phpmyadmin/phpmyadmin
+        hostname: PMAserver
+        container_name: PMA
+        ports:
+            - "4080:80"
+        networks:
+            infra_DB:
+                ipv4_address: 172.16.0.10
+        volumes:
+            - /sessions
+        external_links:
+            - mariaDB:db
+
+    portainer: 
+        image: portainer/portainer
+        container_name: portainer
+        ports:
+            - "9000:9000"
+        networks:
+            infra_DB:
+                ipv4_address: 172.16.0.40
+        command: -H unix:///var/run/docker.sock
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - portainer_data:/data
+
+
+networks:
+    infra_DB:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.16.0.0/24
+                  gateway: 172.16.0.254
+
+volumes:
+    databases:
+    portainer_data:
